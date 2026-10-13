@@ -1,4 +1,22 @@
 [submodule "kernel"]
 	path = kernel
-	url = https://github.com/ztemt/NX669J-kernel.git
-	branch = main
+	url = https://github.com/tangalbert919/android_kernel_nubia_sm8350.git
+	branch = rebase-17200-a12
+	shallow = true
+[submodule "integrations/KernelSU-Next"]
+	path = integrations/KernelSU-Next
+	url = https://github.com/KernelSU-Next/KernelSU-Next.git
+	branch = legacy
+	shallow = true
+[submodule "integrations/SUSFS-LKM"]
+	path = integrations/SUSFS-LKM
+	url = https://github.com/KernelSU-Next/KernelSU-Next.git
+	shallow = true
+[submodule "packaging/AnyKernel3"]
+	path = packaging/AnyKernel3
+	url = https://github.com/osm0sis/AnyKernel3.git
+	shallow = true
+[submodule "packaging/mkbootimg"]
+	path = packaging/mkbootimg
+	url = https://android.googlesource.com/platform/system/tools/mkbootimg
+	shallow = true

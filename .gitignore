@@ -1,0 +1,8 @@
+# User-provided firmware and generated build/release artifacts
+firmware-input/
+out/
+dist/
+*.img
+*.zip
+*.ko
+*.log

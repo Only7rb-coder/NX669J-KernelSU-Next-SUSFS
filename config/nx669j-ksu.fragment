@@ -1,0 +1,7 @@
+# KernelSU Next must be built into this 5.4 kernel (not loaded as an LKM).
+CONFIG_KSU=y
+# The Kconfig warns that its kprobe/tracepoint hook must not be used below 5.10.
+CONFIG_KSU_SYSCALL_TABLE_HOOK=y
+CONFIG_KPROBES=y
+CONFIG_KRETPROBES=y
+CONFIG_MODULES=y
