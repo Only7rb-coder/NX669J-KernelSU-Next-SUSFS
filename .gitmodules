@@ -6,7 +6,7 @@
 [submodule "integrations/KernelSU-Next"]
 	path = integrations/KernelSU-Next
 	url = https://github.com/KernelSU-Next/KernelSU-Next.git
-	branch = legacy
+	branch = dev
 	shallow = true
 [submodule "integrations/SUSFS-LKM"]
 	path = integrations/SUSFS-LKM

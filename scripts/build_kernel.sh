@@ -48,6 +48,21 @@ GOODIX_PATCH="$ROOT/patches/0002-export-goodix-ts-core-data.patch"
 if git -C "$KERNEL_DIR" apply --check "$GOODIX_PATCH" >/dev/null 2>&1; then
   git -C "$KERNEL_DIR" apply "$GOODIX_PATCH"
 fi
+# The latest KernelSU-Next SELinux-hide implementation targets newer SELinux
+# internals than this vendor 5.4 tree; keep the current KSU core and omit only
+# that optional object on 5.4.
+KSU_54_PATCH="$ROOT/patches/0008-kernelsu-next-linux-5.4-selinux-hide.patch"
+if git -C "$KSU_DIR" apply --check "$KSU_54_PATCH" >/dev/null 2>&1; then
+  git -C "$KSU_DIR" apply "$KSU_54_PATCH"
+fi
+KSU_54_API_PATCH="$ROOT/patches/0009-kernelsu-next-linux-5.4-apis.patch"
+if git -C "$KSU_DIR" apply --check "$KSU_54_API_PATCH" >/dev/null 2>&1; then
+  git -C "$KSU_DIR" apply "$KSU_54_API_PATCH"
+fi
+KSU_54_COMPAT_PATCH="$ROOT/patches/0010-kernelsu-next-linux-5.4-compat.patch"
+if git -C "$KSU_DIR" apply --check "$KSU_54_COMPAT_PATCH" >/dev/null 2>&1; then
+  git -C "$KSU_DIR" apply "$KSU_54_COMPAT_PATCH"
+fi
 # SUSFS uses the post-5.6 proc_ops spelling for procfs callbacks. The pinned
 # module must also build against this vendor's Linux 5.4 headers.
 SUSFS_PATCH="$ROOT/patches/0003-susfs-linux-5.4-proc-ops.patch"
