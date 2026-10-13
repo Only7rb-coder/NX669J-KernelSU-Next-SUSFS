@@ -87,11 +87,25 @@ if git -C "$SUSFS_DIR" apply --check "$SUSFS_REMAINING_APIS_PATCH" >/dev/null 2>
 fi
 
 mkdir -p "$OUT_DIR" "$DIST_DIR"
-make -C "$KERNEL_DIR" O="$OUT_DIR" vendor/lahaina-qgki_defconfig
-"$KERNEL_DIR/scripts/kconfig/merge_config.sh" -m -O "$OUT_DIR" \
-  "$OUT_DIR/.config" \
-  "$KERNEL_DIR/arch/arm64/configs/vendor/lahaina-NX669J-GKI_diff" \
-  "$ROOT/config/nx669j-ksu.fragment"
+if [[ -n "${BASE_CONFIG:-}" ]]; then
+  if [[ ! -f "$BASE_CONFIG" ]]; then
+    echo "BASE_CONFIG does not exist: $BASE_CONFIG" >&2
+    exit 2
+  fi
+  # A config extracted from the exact stock kernel is safer than the generic
+  # GKI defconfig: several NX669J vendor drivers are built-in in production,
+  # while the public GKI diff changes them to modules.
+  cp "$BASE_CONFIG" "$OUT_DIR/.config"
+  "$KERNEL_DIR/scripts/kconfig/merge_config.sh" -m -O "$OUT_DIR" \
+    "$OUT_DIR/.config" \
+    "$ROOT/config/nx669j-ksu.fragment"
+else
+  make -C "$KERNEL_DIR" O="$OUT_DIR" vendor/lahaina-qgki_defconfig
+  "$KERNEL_DIR/scripts/kconfig/merge_config.sh" -m -O "$OUT_DIR" \
+    "$OUT_DIR/.config" \
+    "$KERNEL_DIR/arch/arm64/configs/vendor/lahaina-NX669J-GKI_diff" \
+    "$ROOT/config/nx669j-ksu.fragment"
+fi
 make -C "$KERNEL_DIR" O="$OUT_DIR" olddefconfig
 
 # 5.4 requires KernelSU Next built into the kernel. The SUSFS guard LKM is
