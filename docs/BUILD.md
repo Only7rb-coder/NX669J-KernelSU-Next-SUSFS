@@ -4,7 +4,7 @@ This workspace is a starting point, not a prebuilt kernel. Complete the checks b
 
 ## 1. Confirm firmware match
 
-On the phone, record the full model (`NX669J`), Android version, full build number, and kernel version (Settings → About phone; a device-info app or `adb shell uname -a` can provide the kernel string). Confirm that the boot image used for testing comes from that exact firmware build. The public kernel source currently documented here targets Android 11; “latest stock” alone does not establish a match.
+The provided `boot.img` is Android boot header v3 and contains `5.4.147-qgki-gd9147d4b1b39`, built by nubia with Clang 11.0.2. The pinned `ztemt/NX669J-kernel` repository is an Android 11 source drop whose Makefile says Linux 5.4.61. These do not match. Do not build a kernel image from this source for the supplied stock boot image, and do not package it as flash-ready. Record the full model (`NX669J`), Android version, and full build number from Settings → About phone, and obtain the OEM source tree corresponding to this exact firmware.
 
 ## 2. Initialize source
 
@@ -30,7 +30,6 @@ Compare kernel configuration and boot image components with the exact stock firm
 
 ## Current blockers
 
-- Exact Android release/build number for the user's “latest stock” firmware.
-- Running kernel version/build string.
-- Matching stock boot image and the vendor's full build instructions/toolchain details.
+- Exact Android release/build number for the supplied stock firmware.
+- Matching `5.4.147-qgki` kernel source tree and vendor build instructions/toolchain details.
 - Verified KernelSU Next and SUSFS patch revisions compatible with this source.

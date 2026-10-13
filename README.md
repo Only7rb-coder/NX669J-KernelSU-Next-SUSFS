@@ -4,7 +4,7 @@ Experimental build workspace for the **nubia RedMagic 6 (NX669J)**. This repo tr
 
 ## Compatibility warning
 
-The public `ztemt/NX669J-kernel` source identifies itself as an **Android 11** source tree and contains Qualcomm **lahaina** / NX669J configuration fragments. The device owner reported using the latest stock firmware, but its exact Android build and kernel version have not yet been confirmed. Do not build or flash based on the model name alone: mismatched kernel/boot images can prevent the phone from booting.
+The supplied stock `boot.img` has an Android boot v3 header and embeds kernel `5.4.147-qgki-gd9147d4b1b39` (nubia build, Clang 11.0.2). The public `ztemt/NX669J-kernel` source identifies itself as an **Android 11** source tree; its Makefile is Linux **5.4.61**. This is a material source-version mismatch, so this workspace does **not** currently have a matching source tree for that stock image. Do not build or flash based on the model name alone: mismatched kernel/boot images can prevent the phone from booting.
 
 ## Source layout
 
@@ -15,8 +15,9 @@ The public `ztemt/NX669J-kernel` source identifies itself as an **Android 11** s
 
 - [x] Private project repository scaffold
 - [x] Public upstream source pinned as a submodule
-- [ ] Confirm exact stock Android build and running kernel version
-- [ ] Confirm matching stock boot image and build toolchain
+- [x] Read kernel version from supplied stock `boot.img`
+- [ ] Confirm exact stock Android build number / firmware package
+- [ ] Obtain kernel source matching the supplied 5.4.147-qgki firmware
 - [ ] Integrate compatible KernelSU Next revision
 - [ ] Integrate compatible SUSFS revision and configuration
 - [ ] Build and test an image against the exact firmware
