@@ -1,0 +1,4 @@
+[submodule "kernel"]
+	path = kernel
+	url = https://github.com/ztemt/NX669J-kernel.git
+	branch = main
