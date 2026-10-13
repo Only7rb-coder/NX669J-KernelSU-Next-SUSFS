@@ -1,0 +1,12 @@
+diff --git a/kernel/susfs/imports_guard.c b/kernel/susfs/imports_guard.c
+index 54abebdf..c793c767 100644
+--- a/kernel/susfs/imports_guard.c
++++ b/kernel/susfs/imports_guard.c
+@@ -37,7 +37,6 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/delay.h>
+-#include <linux/kstrtox.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
+ #include <linux/mm.h>

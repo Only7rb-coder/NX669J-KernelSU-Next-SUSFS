@@ -41,6 +41,35 @@ grep -q 'source "drivers/kernelsu/Kconfig"' "$KERNEL_DIR/drivers/Kconfig" || \
 if grep -q '^<<<<<<< HEAD$' "$KERNEL_DIR/drivers/rtc/rtc-pm8xxx.c"; then
   git -C "$KERNEL_DIR" apply "$ROOT/patches/0001-resolve-rtc-pm8xxx-conflict.patch"
 fi
+# The vendor tree builds the Goodix core and gesture driver as separate
+# modules, but omits the core state pointer from its exported symbol set.
+# Apply the checked-in one-line compatibility repair only when it is pending.
+GOODIX_PATCH="$ROOT/patches/0002-export-goodix-ts-core-data.patch"
+if git -C "$KERNEL_DIR" apply --check "$GOODIX_PATCH" >/dev/null 2>&1; then
+  git -C "$KERNEL_DIR" apply "$GOODIX_PATCH"
+fi
+# SUSFS uses the post-5.6 proc_ops spelling for procfs callbacks. The pinned
+# module must also build against this vendor's Linux 5.4 headers.
+SUSFS_PATCH="$ROOT/patches/0003-susfs-linux-5.4-proc-ops.patch"
+if git -C "$SUSFS_DIR" apply --check "$SUSFS_PATCH" >/dev/null 2>&1; then
+  git -C "$SUSFS_DIR" apply "$SUSFS_PATCH"
+fi
+SUSFS_KSTRTOX_PATCH="$ROOT/patches/0004-susfs-linux-5.4-kstrtox.patch"
+if git -C "$SUSFS_DIR" apply --check "$SUSFS_KSTRTOX_PATCH" >/dev/null 2>&1; then
+  git -C "$SUSFS_DIR" apply "$SUSFS_KSTRTOX_PATCH"
+fi
+SUSFS_MACCESS_PATCH="$ROOT/patches/0005-susfs-linux-5.4-maccess.patch"
+if git -C "$SUSFS_DIR" apply --check "$SUSFS_MACCESS_PATCH" >/dev/null 2>&1; then
+  git -C "$SUSFS_DIR" apply "$SUSFS_MACCESS_PATCH"
+fi
+SUSFS_TASK_WORK_PATCH="$ROOT/patches/0006-susfs-linux-5.4-task-work.patch"
+if git -C "$SUSFS_DIR" apply --check "$SUSFS_TASK_WORK_PATCH" >/dev/null 2>&1; then
+  git -C "$SUSFS_DIR" apply "$SUSFS_TASK_WORK_PATCH"
+fi
+SUSFS_REMAINING_APIS_PATCH="$ROOT/patches/0007-susfs-linux-5.4-remaining-apis.patch"
+if git -C "$SUSFS_DIR" apply --check "$SUSFS_REMAINING_APIS_PATCH" >/dev/null 2>&1; then
+  git -C "$SUSFS_DIR" apply "$SUSFS_REMAINING_APIS_PATCH"
+fi
 
 mkdir -p "$OUT_DIR" "$DIST_DIR"
 make -C "$KERNEL_DIR" O="$OUT_DIR" vendor/lahaina-qgki_defconfig
@@ -59,7 +88,7 @@ make -C "$KERNEL_DIR" O="$OUT_DIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
 make -C "$KERNEL_DIR" O="$OUT_DIR" M="$SUSFS_DIR/kernel/susfs" \
   ARCH=arm64 LLVM=1 LLVM_IAS=1 CLANG_TRIPLE="$CLANG_TRIPLE" \
   CROSS_COMPILE="$CROSS_COMPILE" CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32" \
-  HOSTCC="$HOSTCC" modules
+  HOSTCC="$HOSTCC" KBUILD_MODPOST_WARN=1 modules
 
 cp "$OUT_DIR/arch/arm64/boot/Image" "$DIST_DIR/Image"
 cp "$SUSFS_DIR/kernel/susfs/susfs_guard_lkm.ko" "$DIST_DIR/susfs_guard_lkm.ko"

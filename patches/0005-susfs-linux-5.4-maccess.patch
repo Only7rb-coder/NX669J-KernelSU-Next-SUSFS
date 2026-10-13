@@ -1,0 +1,75 @@
+--- a/kernel/susfs/imports_guard.c
++++ b/kernel/susfs/imports_guard.c
+@@ -41,6 +41,8 @@
+ #include <linux/slab.h>
+ #include <linux/mm.h>
+ #include <linux/fs.h>
++#include <linux/file.h>
++#include <linux/version.h>
+ #include <linux/namei.h>
+ #include <linux/uaccess.h>
+ #include <linux/mutex.h>
+@@ -99,8 +101,15 @@
+     IMP(task_work_add),
+     IMP(__set_fixmap),
+     IMP_DATA(memstart_addr),
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     IMP_DATA(arm64_use_ng_mappings),
++#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++    IMP(probe_kernel_write),
++    IMP(probe_kernel_read),
++#else
+     IMP(copy_to_kernel_nofault),
++#endif
+     IMP(security_secctx_to_secid),
+     IMP(stop_machine),
+     IMP_DATA(__tracepoint_sys_exit),
+--- a/kernel/susfs/patch_memory.c
++++ b/kernel/susfs/patch_memory.c
+@@ -106,7 +106,11 @@
+     }
+ 
+     map = (void *)set_fixmap_offset(FIX_TEXT_POKE0, phy);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++    ret = (int)probe_kernel_write(map, src, len);
++#else
+     ret = (int)copy_to_kernel_nofault(map, src, len);
++#endif
+     clear_fixmap(FIX_TEXT_POKE0);
+ 
+     if (!ret) {
+--- a/kernel/susfs/susfs_hide_syms.c
++++ b/kernel/susfs/susfs_hide_syms.c
+@@ -694,7 +694,11 @@
+ 	if (!addr)
+ 		return -ENOENT;
+ 	op = (const struct seq_operations *)addr;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++	if (probe_kernel_read(&show, &op->show, sizeof(show)))
++#else
+ 	if (copy_from_kernel_nofault(&show, &op->show, sizeof(show)))
++#endif
+ 		return -EFAULT;
+ 	if (!show || (show & 3))
+ 		return -EINVAL;
+@@ -704,11 +708,19 @@
+ 		u32 insn;
+ 
+ 		pc = show;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++		if (probe_kernel_read(&insn, (void *)pc, sizeof(insn)))
++#else
+ 		if (copy_from_kernel_nofault(&insn, (void *)pc, sizeof(insn)))
++#endif
+ 			return -EFAULT;
+ 		if (insn == 0xd503245f) {		/* bti c: the entry stub's landing pad */
+ 			pc += sizeof(insn);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++			if (probe_kernel_read(&insn, (void *)pc, sizeof(insn)))
++#else
+ 			if (copy_from_kernel_nofault(&insn, (void *)pc, sizeof(insn)))
++#endif
+ 				return -EFAULT;
+ 		}
+ 		if ((insn & 0xfc000000) != 0x14000000)	/* not an unconditional branch: no jump to follow */

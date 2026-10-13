@@ -1,0 +1,16 @@
+diff --git a/kernel/susfs/susfs_supercall.c b/kernel/susfs/susfs_supercall.c
+index 4d0793ff..dce861b7 100644
+--- a/kernel/susfs/susfs_supercall.c
++++ b/kernel/susfs/susfs_supercall.c
+@@ -275,7 +275,11 @@ static int reboot_pre(struct kprobe *kp, struct pt_regs *regs)
+ 	tw->payload = payload;
+ 	tw->cb.func = susfs_tw_func;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
++	if (task_work_add(current, &tw->cb, true)) {
++#else
+ 	if (task_work_add(current, &tw->cb, TWA_RESUME)) {
++#endif
+ 		kfree(tw);
+ 		module_put(THIS_MODULE);
+ 		pr_warn("susfs supercall: task_work_add failed\n");

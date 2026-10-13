@@ -1,0 +1,178 @@
+--- a/kernel/susfs/imports_guard.c
++++ b/kernel/susfs/imports_guard.c
+@@ -66,8 +66,10 @@
+ #include "susfs_log.h"
+ #include "symbol_resolver.h"
+ 
++#if IS_ENABLED(CONFIG_BOOT_CONFIG)
+ /* The variable the bootconfig spoof republishes; nothing declares it in a header. */
+ extern char *saved_boot_config;
++#endif
+ 
+ struct susfs_import {
+     const char *name;
+@@ -87,7 +89,9 @@
+ 
+ static const struct susfs_import susfs_imports[] = {
+     /* names the loaders exist for: unexported or namespaced */
++#if IS_ENABLED(CONFIG_BOOT_CONFIG)
+     IMP_DATA(saved_boot_config),
++#endif
+     IMP_DATA(init_mm),
+     IMP(kern_path),
+     IMP(ihold),
+--- a/kernel/susfs/lsm_hook.c
++++ b/kernel/susfs/lsm_hook.c
+@@ -125,7 +125,11 @@
+ static int ksu_lsm_read_ptr(const void *addr, void *out)
+ {
+     memset(out, 0, sizeof(void *));
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++    return (int)probe_kernel_read(out, addr, sizeof(void *));
++#else
+     return (int)copy_from_kernel_nofault(out, addr, sizeof(void *));
++#endif
+ }
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+--- a/kernel/susfs/susfs_kstat.c
++++ b/kernel/susfs/susfs_kstat.c
+@@ -1212,7 +1212,6 @@
+ 
+ static_assert(offsetof(struct statx, stx_dev_major) == 0x88, "statx.stx_dev_major");
+ static_assert(offsetof(struct statx, stx_dev_minor) == 0x8c, "statx.stx_dev_minor");
+-static_assert(offsetof(struct statx, stx_mnt_id) == 0x90, "statx.stx_mnt_id");
+ static_assert(sizeof(struct statx) == 256, "statx size");
+ static_assert(sizeof(((struct statx *)0)->stx_ino) == 8, "statx stx_ino is u64");
+ static_assert(sizeof(((struct statx *)0)->stx_size) == 8, "statx stx_size is u64");
+--- a/kernel/susfs/sus_mount.c
++++ b/kernel/susfs/sus_mount.c
+@@ -794,7 +794,11 @@
+ #define SUS_MOUNT_ITER_TYPE		struct list_head *
+ #define SUS_MOUNT_ITER_FOR(ns, it)	for ((it) = (ns)->list.next; (it) != &(ns)->list; (it) = (it)->next)
+ #define SUS_MOUNT_ITER_MOUNT(it)	list_entry((it), struct mount, mnt_list)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+ #define SUS_MOUNT_MNT_NOT_IN_NS(r, ns)	((r)->mnt_ns != (ns) || ((r)->mnt.mnt_flags & MNT_CURSOR))
++#else
++#define SUS_MOUNT_MNT_NOT_IN_NS(r, ns)	((r)->mnt_ns != (ns))
++#endif
+ #endif
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+@@ -805,7 +809,9 @@
+     struct mount *r;
+     int learned = 0;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     spin_lock(&ns->ns_lock);
++#endif
+     SUS_MOUNT_ITER_FOR(ns, pos) {
+         int shown;
+ 
+@@ -822,7 +828,9 @@
+             learned++;
+         }
+     }
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     spin_unlock(&ns->ns_lock);
++#endif
+     atomic_inc(&n_clone_walks);
+     if (learned)
+         atomic_add(learned, &n_clone_learned);
+@@ -1329,8 +1337,10 @@
+ {
+     struct sus_mount_kretprobe_state *st = (struct sus_mount_kretprobe_state *)ri->data;
+     unsigned long ubuf = st->ubuf;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+     u64 id = 0, shown;
+     int new_id;
++#endif
+ 
+     atomic_inc(&n_statx_ret);
+     if ((long)regs_return_value(regs) != 0) {
+@@ -1348,6 +1358,9 @@
+     if (sus_mount_is_su_domain())
+         return 0;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
++    return 0;
++#else
+     atomic_inc(&n_statx_hits);
+     if (copy_from_user(&id, (void __user *)(ubuf + offsetof(struct statx, stx_mnt_id)),
+                        sizeof(id))) {
+@@ -1366,6 +1379,7 @@
+         return 0;
+     }
+     atomic_inc(&n_statx_rewrites);
++#endif
+     return 0;
+ }
+ 
+@@ -2059,9 +2073,9 @@
+         return 0;
+     }
+ 
+-    rcu_read_lock();
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+-    spin_lock(&ns->ns_lock);
++	rcu_read_lock();
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
++	spin_lock(&ns->ns_lock);
+ #endif
+     SUS_MOUNT_ITER_FOR(ns, pos) {
+         struct path mnt_path;
+@@ -2148,8 +2162,8 @@
+         sus_mount_ident_add(r);
+         marked++;
+     }
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+-    spin_unlock(&ns->ns_lock);
++	#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
++	spin_unlock(&ns->ns_lock);
+ #endif
+     rcu_read_unlock();
+     sus_mount_ns_walk_end();
+--- a/kernel/susfs/spoof_cmdline.c
++++ b/kernel/susfs/spoof_cmdline.c
+@@ -14,6 +14,7 @@
+ #include "susfs_log.h"
+ #include "susfs.h"	/* susfs_abi_path_ok */
+ 
++#if IS_ENABLED(CONFIG_BOOT_CONFIG)
+ /* unexported static var; ksud insmod relocates it via kallsyms */
+ extern char *saved_boot_config;
+ 
+@@ -117,7 +118,7 @@
+ 		if (copy_to_user(&((struct st_susfs_spoof_cmdline_or_bootconfig __user *)*arg)->err,
+ 				 &err, sizeof(err)))
+ 			pr_warn("cmdline supercall copy_to_user failed\n");
+-		pr_warn_ratelimited("spoof_cmdline: kzalloc failed, reported -ENOMEM\n");
++		pr_warn("spoof_cmdline: kzalloc failed, reported -ENOMEM\n");
+ 		return;
+ 	}
+ 
+@@ -148,3 +149,24 @@
+ 		pr_warn("cmdline supercall copy_to_user failed\n");
+ 	kfree(info);
+ }
++#else
++int susfs_spoof_cmdline_init(void)
++{
++	return 0;
++}
++
++void susfs_spoof_cmdline_exit(void)
++{
++}
++
++void susfs_spoof_cmdline_supercall(void __user **arg)
++{
++	int err = -EOPNOTSUPP;
++
++	if (!arg || !*arg)
++		return;
++	if (copy_to_user(&((struct st_susfs_spoof_cmdline_or_bootconfig __user *)*arg)->err,
++			 &err, sizeof(err)))
++		pr_warn("cmdline supercall copy_to_user failed\n");
++}
++#endif

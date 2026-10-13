@@ -5,3 +5,7 @@ CONFIG_KSU_SYSCALL_TABLE_HOOK=y
 CONFIG_KPROBES=y
 CONFIG_KRETPROBES=y
 CONFIG_MODULES=y
+# NUBIA_ESE is built in by the vendor defconfig and calls SEC_NFC's exported
+# trig_* helpers; keep the provider built in as well instead of leaving an
+# unresolved vmlinux reference to a module-only symbol.
+CONFIG_SEC_NFC=y

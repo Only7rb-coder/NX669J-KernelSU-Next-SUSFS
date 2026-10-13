@@ -1,0 +1,23 @@
+diff --git a/kernel/susfs/susfs.h b/kernel/susfs/susfs.h
+index 10758367..7d3faaa8 100644
+--- a/kernel/susfs/susfs.h
++++ b/kernel/susfs/susfs.h
+@@ -5,6 +5,18 @@
+ #include <linux/string.h>
+ #include <linux/err.h>	/* IS_ERR */
+ #include <linux/mm.h>	/* PAGE_SIZE */
++#include <linux/version.h>
++
++/* proc_ops replaced file_operations for procfs in Linux 5.6.  Keep the
++ * control nodes source-compatible with the 5.4 kernel this module targets. */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
++#define proc_ops file_operations
++#define proc_open open
++#define proc_read read
++#define proc_write write
++#define proc_lseek llseek
++#define proc_release release
++#endif
+ 
+ /* A kernel pointer taken out of a kprobe register, checked before dereference: single_open()'s fake inode is (void *)1
+  * and a kretprobe hands that sentinel over as "the argument" - the sus_map vma probe panicked on exactly that (fault

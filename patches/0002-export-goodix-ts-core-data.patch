@@ -1,0 +1,24 @@
+diff --git a/drivers/nubia/touch/goodix_berlin_driver_v1.0.1/goodix_ts_core.c b/drivers/nubia/touch/goodix_berlin_driver_v1.0.1/goodix_ts_core.c
+index d85a93059ef6..38c4bcf877bf 100755
+--- a/drivers/nubia/touch/goodix_berlin_driver_v1.0.1/goodix_ts_core.c
++++ b/drivers/nubia/touch/goodix_berlin_driver_v1.0.1/goodix_ts_core.c
+@@ -33,12 +33,13 @@
+ #define GOODIX_DEFAULT_CFG_NAME 	"goodix_cfg_group.cfg"
+ #define GOOIDX_INPUT_PHYS			"goodix_ts/input0"
+ 
+-struct goodix_module goodix_modules;
+-struct goodix_ts_core *ts_core_data = NULL;
+-
+-#define CORE_MODULE_UNPROBED     0
+-#define CORE_MODULE_PROB_SUCCESS 1
+-#define CORE_MODULE_PROB_FAILED -1
++struct goodix_module goodix_modules;
++struct goodix_ts_core *ts_core_data = NULL;
++EXPORT_SYMBOL_GPL(ts_core_data);
++
++#define CORE_MODULE_UNPROBED     0
++#define CORE_MODULE_PROB_SUCCESS 1
++#define CORE_MODULE_PROB_FAILED -1
+ #define CORE_MODULE_REMOVED     -2
+ int core_module_prob_sate = CORE_MODULE_UNPROBED;
+ DEFINE_MUTEX(report_lock);
